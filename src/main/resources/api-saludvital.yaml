@@ -1,0 +1,60 @@
+openapi: 3.0.0
+info:
+  title: API de Integración - Clínica SaludVital
+  description: API para la recepción en tiempo real de pre-registros de pacientes desde Admisiones hacia Facturación.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Servidor local de desarrollo
+
+paths:
+  /pre-registros:
+    post:
+      summary: Enviar nuevo pre-registro de paciente
+      description: Recibe la información del paciente para preparar el proceso financiero.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreRegistro'
+      responses:
+        '201':
+          description: Pre-registro aceptado exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  mensaje:
+                    type: string
+                    example: "Registro procesado"
+        '400':
+          description: Error en la validación de los datos (campos vacíos o formato incorrecto).
+
+components:
+  schemas:
+    PreRegistro:
+      type: object
+      required:
+        - patient_id
+        - full_name
+        - appointment_date
+        - insurance_code
+      properties:
+        patient_id:
+          type: string
+          example: "1001"
+        full_name:
+          type: string
+          example: "Sebastian Casamen"
+        appointment_date:
+          type: string
+          format: date
+          example: "2026-04-22"
+        insurance_code:
+          type: string
+          enum: [IESS, PRIVADO, NINGUNO]
+          example: "IESS"
