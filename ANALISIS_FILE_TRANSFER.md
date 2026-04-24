@@ -1,4 +1,4 @@
-# PARTE 1. Comprension y analisis del caso
+﻿# PARTE 1. Comprension y analisis del caso
 
 ## 1. Problema de integracion
 La clinica necesita integrar informacion de admisiones entre sistemas que no se conectan en tiempo real. El problema principal es recibir datos de forma confiable, validarlos y separar registros validos de invalidos sin perder trazabilidad.
@@ -13,7 +13,7 @@ El estilo File Transfer es razonable porque desacopla sistemas, funciona por lot
 4. Menor trazabilidad nativa si no se agregan controles adicionales.
 5. Seguridad mas manual (permisos, cifrado y auditoria).
 
-# PARTE 2. Diseno de la solucion File Transfer
+# PARTE 2. DiseÃ±o de la solucion File Transfer
 
 ## 1. Carpetas involucradas
 - /data/input
@@ -43,3 +43,31 @@ El estilo File Transfer es razonable porque desacopla sistemas, funciona por lot
 - Logs de inicio, resultado y fin por archivo.
 - Archivado de validos con timestamp.
 - Prevencion de reproceso con delete=true al consumir input.
+
+# PARTE 3. Implementacion con Apache Camel
+
+## Resumen de implementacion
+
+### Arquitectura
+- MainApp: inicia Camel.
+- FileIntegrationRoute: define el flujo.
+- ValidatorProcessor: valida CSV.
+
+### Flujo principal
+- Lee CSV desde data/input con file: y delete=true.
+- Valida contenido.
+- Valido -> data/output + copia en data/archive con timestamp.
+- Invalido -> data/error.
+
+### Reglas clave
+- Uso de file: en entrada y salida.
+- Enrutamiento con choice / when / otherwise.
+- Header isValidCsv controla el flujo.
+- Logs de inicio, resultado y fin.
+
+### Evidencia tecnica
+- FileIntegrationRoute extiende RouteBuilder.
+- Se usa from("file:data/input?include=.*\\.csv&delete=true").
+- Se usa to("file:data/output"), to("file:data/archive?...timestamp...") y to("file:data/error").
+- ValidatorProcessor valida cabecera, columnas, vacios, fecha e insurance_code.
+
