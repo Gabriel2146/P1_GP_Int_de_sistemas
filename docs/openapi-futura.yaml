@@ -1,0 +1,198 @@
+openapi: 3.0.3
+info:
+  title: API Futura - Clinica SaludVital
+  version: 1.0.0
+  description: >-
+    Contrato API para evolucionar el proceso de pre-registro desde integracion
+    por archivos hacia integracion REST en tiempo real.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Entorno local
+
+tags:
+  - name: PreRegistros
+    description: Gestion de pre-registros de pacientes
+
+paths:
+  /pre-registros:
+    post:
+      tags: [PreRegistros]
+      summary: Registrar un pre-registro
+      description: Crea un pre-registro de paciente para procesamiento inmediato.
+      operationId: crearPreRegistro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreRegistroRequest'
+            examples:
+              valido:
+                value:
+                  patient_id: "1001"
+                  full_name: "Juan Perez"
+                  appointment_date: "2026-04-22"
+                  insurance_code: "IESS"
+      responses:
+        '201':
+          description: Pre-registro creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreRegistroResponse'
+              examples:
+                creado:
+                  value:
+                    id: "PR-20260422-0001"
+                    mensaje: "Pre-registro recibido correctamente"
+                    estado: "ACEPTADO"
+        '400':
+          description: Datos de entrada invalidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                cabecera:
+                  value:
+                    code: "VALIDATION_ERROR"
+                    message: "appointment_date debe tener formato YYYY-MM-DD"
+        '409':
+          description: Registro duplicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicado:
+                  value:
+                    code: "CONFLICT"
+                    message: "Ya existe un pre-registro para el patient_id y appointment_date"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /pre-registros/{id}:
+    get:
+      tags: [PreRegistros]
+      summary: Consultar un pre-registro por id
+      description: Recupera el detalle de un pre-registro previamente creado.
+      operationId: obtenerPreRegistro
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador del pre-registro
+          schema:
+            type: string
+            example: PR-20260422-0001
+      responses:
+        '200':
+          description: Consulta exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreRegistroDetalle'
+              examples:
+                encontrado:
+                  value:
+                    id: "PR-20260422-0001"
+                    patient_id: "1001"
+                    full_name: "Juan Perez"
+                    appointment_date: "2026-04-22"
+                    insurance_code: "IESS"
+                    estado: "ACEPTADO"
+                    created_at: "2026-04-22T10:30:15Z"
+        '404':
+          description: Pre-registro no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                no_encontrado:
+                  value:
+                    code: "NOT_FOUND"
+                    message: "No existe un pre-registro con el id proporcionado"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    PreRegistroRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - patient_id
+        - full_name
+        - appointment_date
+        - insurance_code
+      properties:
+        patient_id:
+          type: string
+          minLength: 1
+          example: "1001"
+        full_name:
+          type: string
+          minLength: 1
+          example: "Juan Perez"
+        appointment_date:
+          type: string
+          format: date
+          pattern: '^\\d{4}-\\d{2}-\\d{2}$'
+          example: "2026-04-22"
+        insurance_code:
+          type: string
+          enum: [IESS, PRIVADO, NINGUNO]
+          example: "IESS"
+
+    PreRegistroResponse:
+      type: object
+      required: [id, mensaje, estado]
+      properties:
+        id:
+          type: string
+          example: "PR-20260422-0001"
+        mensaje:
+          type: string
+          example: "Pre-registro recibido correctamente"
+        estado:
+          type: string
+          enum: [ACEPTADO, RECHAZADO, PENDIENTE]
+          example: "ACEPTADO"
+
+    PreRegistroDetalle:
+      allOf:
+        - $ref: '#/components/schemas/PreRegistroRequest'
+        - type: object
+          required: [id, estado, created_at]
+          properties:
+            id:
+              type: string
+              example: "PR-20260422-0001"
+            estado:
+              type: string
+              enum: [ACEPTADO, RECHAZADO, PENDIENTE]
+              example: "ACEPTADO"
+            created_at:
+              type: string
+              format: date-time
+              example: "2026-04-22T10:30:15Z"
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          example: "Datos invalidos"
