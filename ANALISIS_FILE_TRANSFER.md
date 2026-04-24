@@ -71,3 +71,49 @@ El estilo File Transfer es razonable porque desacopla sistemas, funciona por lot
 - Se usa to("file:data/output"), to("file:data/archive?...timestamp...") y to("file:data/error").
 - ValidatorProcessor valida cabecera, columnas, vacios, fecha e insurance_code.
 
+# PARTE 4. Evolucion futura del proceso mediante API
+
+## 4.1 Propuesta de mejora
+La mejora recomendada es mover la recepcion de pre-registros a una API REST para reducir latencia, mejorar seguridad y tener trazabilidad por solicitud. El esquema con archivos puede mantenerse para lotes o contingencia.
+
+## 4.2 Diseno de API
+
+Recurso principal:
+- pre-registros
+
+Endpoints:
+1. POST /api/v1/pre-registros
+- Metodo: POST
+- Request JSON: patient_id, full_name, appointment_date, insurance_code
+- Response 201: id, mensaje, estado
+- Errores: 400, 409, 500
+
+2. GET /api/v1/pre-registros/{id}
+- Metodo: GET
+- Response 200: detalle del pre-registro
+- Errores: 404, 500
+
+## 4.3 Contrato OpenAPI (parcial)
+
+```yaml
+openapi: 3.0.0
+info:
+	title: API de Integracion - Clinica SaludVital
+	version: 1.0.0
+servers:
+	- url: http://localhost:8080/api/v1
+paths:
+	/pre-registros:
+		post:
+			summary: Registrar pre-registro
+			responses:
+				'201': { description: Creado }
+				'400': { description: Solicitud invalida }
+	/pre-registros/{id}:
+		get:
+			summary: Consultar pre-registro
+			responses:
+				'200': { description: OK }
+				'404': { description: No encontrado }
+```
+
